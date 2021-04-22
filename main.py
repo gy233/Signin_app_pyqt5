@@ -1,8 +1,10 @@
 import sys
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, sip
 from mainwin import Ui_MainWin
 from signin import Ui_Signin
 from database import Sql
+from chooseitem import Ui_Chooseitem
+from workthreads import Thread1, Thread2
 
 
 class Signin(QtWidgets.QDialog, Ui_Signin):
@@ -13,10 +15,9 @@ class Signin(QtWidgets.QDialog, Ui_Signin):
         self.setupUi(self)
 
         # import user information from database
-        users = Sql()
-        self.all_users, self.all_passwords = users.show_all_data()
-        for user in self.all_users:
-            self.comboBox.addItem(user)
+        self.users = Sql()
+        self.all_users, self.all_passwords = self.users.show_all_data()
+        self.comboBox.addItems(self.all_users)
         self.lineEdit_password.setText(self.all_passwords[0])
 
         # connections
@@ -26,6 +27,8 @@ class Signin(QtWidgets.QDialog, Ui_Signin):
 
     def signin_clicked(self):
         print("sign in")
+        if self.checkBox_remember_psw.isChecked() and self.comboBox.currentText() not in self.all_users:
+            self.users.add_user(self.comboBox.currentText(), self.lineEdit_password.text())
         self.accept()
 
     def exit_clicked(self):
@@ -33,30 +36,82 @@ class Signin(QtWidgets.QDialog, Ui_Signin):
         self.reject()
 
     def update_user_password(self):
-        index = self.all_users.index(self.comboBox.currentText())
-        self.lineEdit_password.setText(self.all_passwords[index])
+        if self.comboBox.currentText() in self.all_users:
+            index = self.all_users.index(self.comboBox.currentText())
+            self.lineEdit_password.setText(self.all_passwords[index])
+        else:
+            self.lineEdit_password.clear()
+
+
+class ChooseItem(QtWidgets.QDialog, Ui_Chooseitem):
+    def __init__(self):
+        super(ChooseItem, self).__init__()
+
+        # Set up the user interface from Designer.
+        self.setupUi(self)
 
 
 class MainWin(QtWidgets.QMainWindow, Ui_MainWin):
-    user_s = QtCore.pyqtSignal(str)
-
     def __init__(self):
         super(MainWin, self).__init__()
 
         # Set up the user interface from Designer.
         self.setupUi(self)
 
+        self.thread1 = Thread1()
+        self.thread2 = Thread2()
+
         # connection
-        self.user_s.connect(self.name_show)
+        self.pushButton_user.clicked.connect(self.change_user)
+        self.pushButton_additem.clicked.connect(self.additem)
+        self.pushButton_deleteitem.clicked.connect(self.deleteitem)
+        self.pushButton_work1.clicked.connect(self.work1)
+        self.pushButton_work2.clicked.connect(self.work2)
+        self.thread2.log.connect(self.log_display)
+        self.thread2.signal.connect(self.set_btn)
 
         win_signin = Signin()
         if not win_signin.exec_():
             exit()
         else:
-            self.user_s.emit(win_signin.comboBox.currentText())
+            self.pushButton_user.setText(win_signin.comboBox.currentText())
 
-    def name_show(self, name):
-        self.pushButton_user.setText(name)
+    def change_user(self):
+        print("change user")
+        win_signin = Signin()
+        if win_signin.exec_():
+            self.pushButton_user.setText(win_signin.comboBox.currentText())
+
+    def additem(self):
+        print("add item")
+        win_chooseitem = ChooseItem()
+        if win_chooseitem.exec_():
+            checkBox_new = QtWidgets.QCheckBox(self.verticalLayoutWidget)
+            self.verticalLayout.addWidget(checkBox_new)
+            checkBox_new.setText(win_chooseitem.lineEdit.text())
+            checkBox_new.setObjectName("checkBox_" + win_chooseitem.lineEdit.text())
+
+    def deleteitem(self):
+        print("delete item")
+        win_chooseitem = ChooseItem()
+        if win_chooseitem.exec_():
+            checkBox_delete = self.findChild(QtWidgets.QCheckBox, "checkBox_" + win_chooseitem.lineEdit.text())
+            print(checkBox_delete)
+            if checkBox_delete is not None:
+                sip.delete(checkBox_delete)
+
+    def work1(self):
+        self.thread1.start()
+
+    def work2(self):
+        self.pushButton_work2.setEnabled(False)
+        self.thread2.start()
+
+    def set_btn(self):
+        self.pushButton_work2.setEnabled(True)
+
+    def log_display(self, text):
+        self.textBrowser.append(text)
 
 
 if __name__ == '__main__':

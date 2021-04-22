@@ -56,10 +56,12 @@ class Ui_Signin(object):
         self.comboBox.setMinimumSize(QtCore.QSize(0, 25))
         self.comboBox.setMaximumSize(QtCore.QSize(16777215, 25))
         self.comboBox.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
+        self.comboBox.setAcceptDrops(False)
         self.comboBox.setAutoFillBackground(False)
         self.comboBox.setStyleSheet("QComboBox{\n"
 "    background:white;\n"
 "}")
+        self.comboBox.setEditable(True)
         self.comboBox.setFrame(True)
         self.comboBox.setObjectName("comboBox")
         self.horizontalLayout.addWidget(self.comboBox)

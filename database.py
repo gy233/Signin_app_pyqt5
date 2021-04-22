@@ -1,6 +1,7 @@
 import sqlite3
 
-class Sql:
+
+class Sql(object):
     def __init__(self):
         super(Sql, self).__init__()
         try:
@@ -34,16 +35,15 @@ class Sql:
         cursor = db.cursor()
         cursor.execute('''SELECT name, password FROM users''')
         all_rows = cursor.fetchall()
-        users=[]
-        passwords=[]
+        users = []
+        passwords = []
         for row in all_rows:
-            print("show_all_data", '{0} : {1}'.format(row[0], row[1]))
             users.append(row[0])
             passwords.append(row[1])
         print(users)
         print(passwords)
         db.close()
-        return users,passwords
+        return users, passwords
 
     def get_first_user(self):
         db = sqlite3.connect("user_data.db")
